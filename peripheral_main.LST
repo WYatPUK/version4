@@ -1,0 +1,184 @@
+C51 COMPILER V9.01   PERIPHERAL_MAIN                                                       06/24/2016 12:11:03 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE PERIPHERAL_MAIN
+OBJECT MODULE PLACED IN peripheral_main.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE peripheral_main.c LARGE BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include <reg51.h>
+   2          
+   3          
+   4          #include "GeneralAnswer0601.h"
+   5          #define This_UUID 0x1113
+   6          
+   7          #define Password 0x3463
+   8          
+   9          unsigned int R;//10位绝对值，6位数量级
+  10          unsigned int order;//8位命令
+  11          unsigned int x;
+  12          int nearistp;
+  13          #include "Find_Struct.h"
+  14          #include "link.h"
+  15          
+  16          #define Num_Port 1
+  17          #define Port0_Sendp P2^0
+  18          #define Port0_Receivep  P0^7
+  19          #include "Communication_Profile0601.h"
+  20          #include "Communication_Receive_Central0601.h"
+  21          #include "Communication_Send_Central0601.h"
+  22          
+  23          void DelaySelfCheck()
+  24          {
+  25   1              int i, j;
+  26   1              for (i=0; i<200; i++)
+  27   1              {
+  28   2                      for (j=0 ; j<200; j++);
+  29   2              }
+  30   1      }
+  31          void main()
+  32          {
+  33   1              char mstate;
+  34   1              P0 = 0;
+  35   1              P1 = 0;
+  36   1              P2 = 0;
+  37   1              P3 = 0;
+  38   1              Initialize_Communication();
+  39   1              while (1)
+  40   1              {
+  41   2                       while (Receive_Port[0]() == 1);
+  42   2                       mstate = ReceiveM_Port(0);
+  43   2                       if (mstate != Receive_Finished)
+  44   2                       {
+  45   3                               continue;
+  46   3                       }
+  47   2                       if (ReceiveOrder == R_Cmd_GoStart) 
+  48   2                       {
+  49   3                               continue; //回到主进程
+  50   3                       }
+  51   2                       SendData = ReceiveData;
+  52   2                       SendOrder = ReceiveOrder;
+  53   2                       SendM_Port(0);
+  54   2                                                                                                                                                                                        
+  55   2                       if (ReceiveOrder == R_Cmd_Ask)//回复设备型号
+C51 COMPILER V9.01   PERIPHERAL_MAIN                                                       06/24/2016 12:11:03 PAGE 2   
+
+  56   2                       {
+  57   3                           SendData = This_UUID;//编号
+  58   3                               SendOrder = Unit_Resistance;//说明是电阻型的
+  59   3                               SendM_Port(0);
+  60   3                       }
+  61   2                       else if (ReceiveOrder == R_Cmd_Check)//启动自检程序
+  62   2                       {
+  63   3                               int i, p;
+  64   3                               if(ReceiveData == Password)
+  65   3                               {
+  66   4                                       SendOrder = T_Cmd_PasswordAccepted;
+  67   4                                       SendData = 0;
+  68   4                                       SendM_Port(0);
+  69   4                               }
+  70   3                               else
+  71   3                               {
+  72   4                                       SendOrder = T_Cmd_PasswordWrong;
+  73   4                                       SendData = 0;
+  74   4                                       SendM_Port(0);
+  75   4                                       continue;
+  76   4                               }
+  77   3                               P0 = 1<<7;
+  78   3                               P1 = 0;
+  79   3                               P2 = 1;
+  80   3                               P3 = 3;
+  81   3                               p=1;
+  82   3                               for (i=0; i<7; i++)
+  83   3                               {
+  84   4                                      P0 |= p;
+  85   4                                      DelaySelfCheck();
+  86   4                                      p<<=1;
+  87   4                                      P0 = 1<<7;
+  88   4                                      DelaySelfCheck();
+  89   4                               }
+  90   3                               p=1;
+  91   3                               for (i=0; i<8; i++)
+  92   3                               {
+  93   4                                      P1 |= p;
+  94   4                                      DelaySelfCheck();
+  95   4                                      p<<=1;
+  96   4                                      P1 = 0;
+  97   4                                      DelaySelfCheck();
+  98   4                               }
+  99   3                               p=0x04;
+ 100   3                               for (i=0; i<6; i++)
+ 101   3                               {
+ 102   4                                      P3 |= p;
+ 103   4                                      DelaySelfCheck();
+ 104   4                                      p<<=1;
+ 105   4                                      P3 = 3;
+ 106   4                                      DelaySelfCheck();
+ 107   4                               }
+ 108   3                               p=2;
+ 109   3                               for (i=0; i<7; i++)
+ 110   3                               {
+ 111   4                                      P2 |= p;
+ 112   4                                      DelaySelfCheck();
+ 113   4                                      p<<=1;
+ 114   4                                      P2 = 1;
+ 115   4                                      DelaySelfCheck();
+ 116   4                               }
+ 117   3                       }
+C51 COMPILER V9.01   PERIPHERAL_MAIN                                                       06/24/2016 12:11:03 PAGE 3   
+
+ 118   2                       else if (ReceiveOrder == R_Cmd_Link) //连接8引脚电路
+ 119   2                       {
+ 120   3                               char a, b;
+ 121   3                   ClearLink();
+ 122   3                               a = ReceiveData & 0x0f;        //解释连接方式
+ 123   3                               b = (ReceiveData>>4) & 0x0f;
+ 124   3                               if ((a==1 && b==1) || (a==2 && b==2))
+ 125   3                               {
+ 126   4                                        SendOrder = T_Cmd_LinkWrong;
+ 127   4                                        SendData = 0;
+ 128   4                                        SendM_Port(0);
+ 129   4                                        continue;
+ 130   4                               }
+ 131   3                               Link(a,b);
+ 132   3                               SendOrder = T_Cmd_LinkFinished;
+ 133   3                               SendData = 0;
+ 134   3                               SendM_Port(0);
+ 135   3                       }
+ 136   2                       else if (ReceiveOrder == Unit_Resistance)      //是电阻的单位
+ 137   2                       {
+ 138   3                               x = ReceiveData;
+ 139   3                               nearistp = Find_Nearist(x);
+ 140   3                               SendData = SListR[nearistp];
+ 141   3                               SendOrder = Unit_Resistance;
+ 142   3                               SendM_Port(0);
+ 143   3                               while (Receive_Port[0]() == 1);  //等待无限长时间，为保证安全，在进行新操作前，中控机需要发送GoStart指
+             -令
+ 144   3                               if (ReceiveM_Port(0) != Receive_Finished) continue;
+ 145   3                               if (ReceiveOrder == R_Cmd_GoStart) continue; //回到主进程 
+ 146   3                               if (ReceiveOrder == R_Cmd_FindConfirm) //确认
+ 147   3                               Excute(nearistp);
+ 148   3                       }
+ 149   2                       else //未知命令
+ 150   2                       {
+ 151   3                               SendOrder = T_Cmd_UnkownCmd;
+ 152   3                               SendData = 0;
+ 153   3                               SendM_Port(0);
+ 154   3                       }
+ 155   2              }       
+ 156   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4537    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   1026      64
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

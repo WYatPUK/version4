@@ -1,0 +1,4 @@
+"STARTUP.obj",
+"peripheral_main.obj" 
+TO "UUID1113" 
+RAMSIZE(256) 

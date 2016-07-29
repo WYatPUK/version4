@@ -1,0 +1,4 @@
+"STARTUP.obj",
+"peripheral_main.obj" 
+TO "peripheral" 
+RAMSIZE(256) 

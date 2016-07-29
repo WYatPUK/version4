@@ -1,0 +1,4 @@
+"STARTUP.obj",
+"central_main.obj" 
+TO "central" 
+RAMSIZE(256) 

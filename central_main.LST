@@ -1,0 +1,533 @@
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE CENTRAL_MAIN
+OBJECT MODULE PLACED IN central_main.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE central_main.c LARGE BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include <reg51.h>
+   2          
+   3          char Str[30];
+   4          int Strlen;
+   5          
+   6          #define central //”√¿¥ªÒ»°central–Ë“™¥¶¿Ìµƒ◊÷∑˚¥Æ–≈œ¢
+   7          #include "GeneralAnswer0601.h"
+   8          
+   9          void UsartConfiguration();
+  10          
+  11          #define Num_Port 5         // ‘ ‘ƒ‹≤ªƒ‹”√
+  12          #define Port0_Sendp P0^0
+  13          #define Port0_Receivep P0^1
+  14          #define Port1_Sendp P0^2
+  15          #define Port1_Receivep P0^3
+  16          #define Port2_Sendp P0^4
+  17          #define Port2_Receivep P0^5
+  18          #define Port3_Sendp P0^6
+  19          #define Port3_Receivep P0^7
+  20          #define Port4_Sendp P2^7
+  21          #define Port4_Receivep P2^6
+  22          #include "Communication_Profile0601.h"
+  23          #include "Communication_Send_Central0601.h"
+  24          #include "Communication_Receive_Central0601.h"
+  25          
+  26          void main()
+  27          {
+  28   1              UsartConfiguration();
+  29   1              Initialize_Communication();
+  30   1              Strlen = 0;     
+  31   1              while (1)
+  32   1              {
+  33   2                      
+  34   2              }
+  35   1      }
+  36          
+  37          /*
+  38          void SendString1(const char* a)
+  39          {
+  40                  int i;
+  41                  for (i=0; i<30 && a[i]!=0; i++)
+  42                  {
+  43                          SBUF = a[i];
+  44                          while (!TI);
+  45                          TI = 0;
+  46                  }
+  47          } */
+  48          void UsartConfiguration()
+  49          {
+  50   1              SCON=0X50;                      //…Ë÷√Œ™π§◊˜∑Ω Ω1
+  51   1              TMOD=0X20;                      //…Ë÷√º∆ ˝∆˜π§◊˜∑Ω Ω2
+  52   1              PCON=0X80;                      //≤®Ãÿ¬ º”±∂
+  53   1              TH1=0XFA;
+  54   1              //TH1=0XF3;                 //º∆ ˝∆˜≥ı º÷µ…Ë÷√£¨◊¢“‚≤®Ãÿ¬  «4800µƒ
+  55   1              //TL1=0XF3;
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 2   
+
+  56   1              TL1=0XFA;                        //µ˜≥…¡À9600≤®Ãÿ¬ 
+  57   1              ES=1;                                           //¥Úø™Ω” ’÷–∂œ
+  58   1              EA=1;                                           //¥Úø™◊‹÷–∂œ
+  59   1              TR1=1;                                      //¥Úø™º∆ ˝∆˜
+  60   1              ET1=0;
+  61   1      }
+  62          
+  63          void SendString0(const char* a)
+  64          {
+  65   1              int i;
+  66   1              for (i=0; i<30 && a[i]!=0; i++)
+  67   1              {
+  68   2                      SBUF = a[i];
+  69   2                      while (!TI);
+  70   2                      TI = 0;
+  71   2              }
+  72   1      }
+  73          
+  74          void SendCharHex(char x)
+  75          {
+  76   1              unsigned char low;
+  77   1              unsigned char high;
+  78   1              low = x&0x0f;
+  79   1              high = (x>>4)&0x0f;
+  80   1              if (low<10) low = '0'+low;
+  81   1              else low = 'a'+low-10;
+  82   1              if (high<10) high = '0'+high;
+  83   1              else high = 'a'+high-10;
+  84   1              SBUF=high;
+  85   1              while(!TI);
+  86   1              TI=0;
+  87   1              SBUF=low;
+  88   1              while(!TI);
+  89   1              TI=0;   
+  90   1      }
+  91          unsigned char CharToHex(char high, char low)
+  92          {
+  93   1              unsigned char x; 
+  94   1              if (high >= '0' && high <= '9')
+  95   1              {
+  96   2                      x = (high - '0')<<4;
+  97   2              }
+  98   1              else if (high >= 'a' && high <= 'f')
+  99   1              {
+ 100   2                      x = (high - 'a' + 10)<<4;
+ 101   2              }
+ 102   1              else return 0;
+ 103   1              if (low >= '0' && low <= '9')
+ 104   1              {
+ 105   2                      x |= (low - '0');
+ 106   2              }
+ 107   1              else if (low >= 'a' && low <= 'f')
+ 108   1              {
+ 109   2                      x |= (low - 'a' + 10);
+ 110   2              }
+ 111   1              else return 0;
+ 112   1              return x;       
+ 113   1      }
+ 114          
+ 115          char Send_GoStart_Port(char Port)
+ 116          {
+ 117   1              SendData = 0;
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 3   
+
+ 118   1              SendOrder = R_Cmd_GoStart;
+ 119   1              return SendM_Port(Port);
+ 120   1      }
+ 121          
+ 122          void Serial_SendDataOrder(unsigned char Order, unsigned int Data)
+ 123          {
+ 124   1              SendCharHex((Data>>8)&0xff);
+ 125   1              SendCharHex(Data&0xff) ;
+ 126   1              SendCharHex(Order);
+ 127   1      }        
+ 128          void DoString()
+ 129          {
+ 130   1              int i;
+ 131   1              char mPort;
+ 132   1              /*
+ 133   1              //≈–∂® «∑Ò «Re÷∏¡Ó
+ 134   1              if (Strlen == Serial_Cmd_Re_Len + Serial_Cmd_Re_Extra)
+ 135   1              {
+ 136   1                      for (i=0; i<Serial_Cmd_Re_Len; i++)
+ 137   1                      {
+ 138   1                              if (Str[i] != Serial_Cmd_Re[i]) break;
+ 139   1                      }
+ 140   1                      if (i == Serial_Cmd_Re_Len)
+ 141   1                      {
+ 142   1                              if (Send_GoStart_Port(0)!=Send_Finished)
+ 143   1                              {
+ 144   1                                      SendString0(Serial_Back_GoStartWrong);
+ 145   1                                      return;
+ 146   1                              }
+ 147   1                              SendOrder = CharToHex(Str[i+4],Str[i+5]);
+ 148   1                              SendData = (CharToHex(Str[i],Str[i+1])<<8) | CharToHex(Str[i+2],Str[i+3]);
+ 149   1                              if (SendM_Port(0)!=Send_Finished)
+ 150   1                              {
+ 151   1                                      SendString0(Serial_Back_SendWrong);
+ 152   1                                      return;
+ 153   1                              }
+ 154   1                              for (i=0; i<1000 && Receive_Port[0]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡À£¨“
+             -ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 155   1                              if (i==1000)
+ 156   1                              {
+ 157   1                                      SendString0(Serial_Back_NoAnswer);
+ 158   1                                      return;
+ 159   1                              }
+ 160   1                              if (ReceiveM_Port(0) != Receive_Finished)
+ 161   1                              {
+ 162   1                                      SendString0(Serial_Back_TreatyWrong);
+ 163   1                                      return;
+ 164   1                              }
+ 165   1                              Serial_SendDataOrder(ReceiveOrder, ReceiveData);
+ 166   1                              return;
+ 167   1                      }
+ 168   1              } */
+ 169   1              //≈–∂® «∑Ò «Ask÷∏¡Ó
+ 170   1              if (Strlen == Serial_Cmd_Ask_Len + Serial_Cmd_Port)
+ 171   1              {
+ 172   2                      for (i=0; i<Serial_Cmd_Ask_Len; i++)
+ 173   2                      {
+ 174   3                              if (Str[i] != Serial_Cmd_Ask[i]) break;
+ 175   3                      }
+ 176   2                      if (i == Serial_Cmd_Ask_Len && Str[i] == '@')
+ 177   2                      {
+ 178   3                              //do something
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 4   
+
+ 179   3                              mPort = CharToHex('0', Str[i + 1]);
+ 180   3                              if (mPort >= Num_Port) 
+ 181   3                              {
+ 182   4                                      SendString0(Serial_Back_PortNotExist);
+ 183   4                                      return;
+ 184   4                              }
+ 185   3                              if (Send_GoStart_Port(mPort)!=Send_Finished)
+ 186   3                              {
+ 187   4                                      SendString0(Serial_Back_GoStartWrong);
+ 188   4                                      return;
+ 189   4                              }
+ 190   3                              SendOrder = R_Cmd_Ask;
+ 191   3                              SendData = 0;
+ 192   3                              if (SendM_Port(mPort)!=Send_Finished)
+ 193   3                              {
+ 194   4                                      SendString0(Serial_Back_SendWrong);
+ 195   4                                      return;
+ 196   4                              }
+ 197   3                              for (i=0; i<1000 && Receive_Port[mPort]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡
+             -À£¨“ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 198   3                              if (i==1000)
+ 199   3                              {
+ 200   4                                      SendString0(Serial_Back_NoAnswer);
+ 201   4                                      return;
+ 202   4                              }
+ 203   3                              if (ReceiveM_Port(mPort) != Receive_Finished)
+ 204   3                              {
+ 205   4                                      SendString0(Serial_Back_TreatyWrong);
+ 206   4                                      return;
+ 207   4                              }
+ 208   3                              if (ReceiveOrder != SendOrder || ReceiveData != SendData)
+ 209   3                              {
+ 210   4                                      SendString0(Serial_Back_WrongRepeatBack);
+ 211   4                                      Serial_SendDataOrder(ReceiveOrder, ReceiveData);
+ 212   4                                      return;
+ 213   4                              }
+ 214   3                              for (i=0; i<1000 && Receive_Port[mPort]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡
+             -À£¨“ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 215   3                              if (i==1000)
+ 216   3                              {
+ 217   4                                      SendString0(Serial_Back_NoAnswer);
+ 218   4                                      return;
+ 219   4                              }
+ 220   3                              if (ReceiveM_Port(mPort)!=Receive_Finished)
+ 221   3                              {
+ 222   4                                      SendString0(Serial_Back_TreatyWrong);
+ 223   4                                      return;
+ 224   4                              }
+ 225   3                              SendString0(Serial_Back_Info);
+ 226   3                              Serial_SendDataOrder(ReceiveOrder, ReceiveData);
+ 227   3                              SBUF = '#';
+ 228   3                              while (!TI); TI = 0;
+ 229   3                              return;
+ 230   3                      }
+ 231   2              }
+ 232   1              
+ 233   1              //≈–∂® «∑Ò «Find÷∏¡Ó
+ 234   1              if (Strlen == Serial_Cmd_Find_Len + Serial_Cmd_Find_Extra + 2)
+ 235   1              {
+ 236   2                      for (i=0; i<Serial_Cmd_Find_Len; i++)
+ 237   2                      {
+ 238   3                              if (Str[i] != Serial_Cmd_Find[i]) break;
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 5   
+
+ 239   3                      }
+ 240   2                      if (i == Serial_Cmd_Find_Len && Str[Serial_Cmd_Find_Len + Serial_Cmd_Find_Extra] == '@')
+ 241   2                      {
+ 242   3                              mPort = CharToHex('0', Str[Serial_Cmd_Find_Len + Serial_Cmd_Find_Extra + 1]);
+ 243   3                              if (mPort >= Num_Port) 
+ 244   3                              {
+ 245   4                                      SendString0(Serial_Back_PortNotExist);
+ 246   4                                      return;
+ 247   4                              }
+ 248   3                              //do something
+ 249   3                              if (Send_GoStart_Port(mPort)!=Send_Finished)
+ 250   3                              {
+ 251   4                                      SendString0(Serial_Back_GoStartWrong);
+ 252   4                                      return;
+ 253   4                              }
+ 254   3                              SendOrder = CharToHex(Str[i+4],Str[i+5]);
+ 255   3                              SendData = (CharToHex(Str[i],Str[i+1])<<8) | CharToHex(Str[i+2],Str[i+3]);
+ 256   3                              if (SendM_Port(mPort)!=Send_Finished)
+ 257   3                              {
+ 258   4                                      SendString0(Serial_Back_SendWrong);
+ 259   4                                      return;
+ 260   4                              }
+ 261   3                              for (i=0; i<1000 && Receive_Port[0]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡À£¨“
+             -ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 262   3                              if (i==1000)
+ 263   3                              {
+ 264   4                                      SendString0(Serial_Back_NoAnswer);
+ 265   4                                      return;
+ 266   4                              }                                                                                                                  
+ 267   3                              if (ReceiveM_Port(mPort)!=Receive_Finished)
+ 268   3                              {
+ 269   4                                      SendString0(Serial_Back_TreatyWrong);
+ 270   4                                      return;
+ 271   4                              }
+ 272   3                              if (ReceiveOrder != SendOrder || ReceiveData != SendData)
+ 273   3                              {
+ 274   4                                      SendString0(Serial_Back_WrongRepeatBack);
+ 275   4                                      return;
+ 276   4                              }
+ 277   3                              for (i=0; i<10000 && Receive_Port[mPort]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π
+             -¡À£¨“ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 278   3                              if (i==10000)
+ 279   3                              {
+ 280   4                                      SendString0(Serial_Back_NoAnswer);
+ 281   4                                      return;
+ 282   4                              }
+ 283   3                              if (ReceiveM_Port(mPort)!=Receive_Finished)
+ 284   3                              {
+ 285   4                                      SendString0(Serial_Back_TreatyWrong);
+ 286   4                                      return;
+ 287   4                              }
+ 288   3                              SendString0(Serial_Back_Confirm);
+ 289   3                              Serial_SendDataOrder(ReceiveOrder, ReceiveData);
+ 290   3                              SBUF = '#';
+ 291   3                              while (!TI); TI = 0;    
+ 292   3                              return;
+ 293   3                      }
+ 294   2              }
+ 295   1              //≈–∂® «∑Ò «Confirm÷∏¡Ó
+ 296   1              if (Strlen == Serial_Cmd_Confirm_Len + 2)
+ 297   1              {
+ 298   2                      for (i=0; i<Serial_Cmd_Confirm_Len; i++)
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 6   
+
+ 299   2                      {
+ 300   3                              if (Str[i] != Serial_Cmd_Confirm[i]) break;
+ 301   3                      }
+ 302   2                      if (i == Serial_Cmd_Confirm_Len && Str[i] == '@')
+ 303   2                      {
+ 304   3                              mPort = CharToHex('0', Str[i + 1]);
+ 305   3                              if (mPort >= Num_Port) 
+ 306   3                              {
+ 307   4                                      SendString0(Serial_Back_PortNotExist);
+ 308   4                                      return;
+ 309   4                              }
+ 310   3                              SendOrder = R_Cmd_FindConfirm;
+ 311   3                              SendData = 0;
+ 312   3                              if (SendM_Port(mPort)!=Send_Finished)
+ 313   3                              {
+ 314   4                                      SendString0(Serial_Back_SendWrong);
+ 315   4                                      return;
+ 316   4                              }
+ 317   3                              SendString0(Serial_Back_Confirmed);
+ 318   3                              return;
+ 319   3                      }
+ 320   2              } 
+ 321   1              //≈–∂® «∑Ò «Link÷∏¡Ó
+ 322   1              if (Strlen == Serial_Cmd_Link_Len + Serial_Cmd_Link_Extra + Serial_Cmd_Port)
+ 323   1              {
+ 324   2                      for (i=0; i<Serial_Cmd_Link_Len; i++)
+ 325   2                      {
+ 326   3                              if (Str[i] != Serial_Cmd_Link[i]) break;
+ 327   3                      }
+ 328   2                      if (i == Serial_Cmd_Link_Len && Str[i + Serial_Cmd_Link_Extra] == '@')
+ 329   2                      {
+ 330   3                              //do something
+ 331   3                              mPort = CharToHex('0', Str[i + Serial_Cmd_Link_Extra + 1]);
+ 332   3                              if (Send_GoStart_Port(mPort)!=Send_Finished)
+ 333   3                              {
+ 334   4                                      SendString0(Serial_Back_GoStartWrong);
+ 335   4                                      return;
+ 336   4                              }
+ 337   3                              SendOrder = R_Cmd_Link;
+ 338   3                              SendData = (CharToHex(Str[i],Str[i+1])<<8) | CharToHex(Str[i+2],Str[i+3]);
+ 339   3                              if (SendM_Port(mPort)!=Send_Finished)
+ 340   3                              {
+ 341   4                                      SendString0(Serial_Back_SendWrong);
+ 342   4                                      return;
+ 343   4                              }
+ 344   3                              for (i=0; i<1000 && Receive_Port[mPort]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡
+             -À£¨“ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 345   3                              if (i==1000)
+ 346   3                              {
+ 347   4                                      SendString0(Serial_Back_NoAnswer);
+ 348   4                                      return;
+ 349   4                              }
+ 350   3                              if (ReceiveM_Port(mPort)!=Receive_Finished)
+ 351   3                              {
+ 352   4                                      SendString0(Serial_Back_TreatyWrong);
+ 353   4                                      return;
+ 354   4                              }
+ 355   3                              if (ReceiveOrder != SendOrder || ReceiveData != SendData)
+ 356   3                              {
+ 357   4                                      SendString0(Serial_Back_WrongRepeatBack);
+ 358   4                                      return;
+ 359   4                              }
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 7   
+
+ 360   3                              for (i=0; i<1000 && Receive_Port[mPort]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡
+             -À£¨“ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 361   3                              if (i==1000)
+ 362   3                              {
+ 363   4                                      SendString0(Serial_Back_NoAnswer);
+ 364   4                                      return;
+ 365   4                              }
+ 366   3                              if (ReceiveM_Port(mPort)!=Receive_Finished)
+ 367   3                              {
+ 368   4                                      SendString0(Serial_Back_TreatyWrong);
+ 369   4                                      return;
+ 370   4                              }
+ 371   3                              if (ReceiveOrder == T_Cmd_LinkFinished)
+ 372   3                              {
+ 373   4                                      SendString0(Serial_Back_LinkFinished);
+ 374   4                              }
+ 375   3                              else if (ReceiveOrder == T_Cmd_LinkWrong)
+ 376   3                              {
+ 377   4                                      SendString0(Serial_Back_LinkWrong);
+ 378   4                                      return;
+ 379   4                              }
+ 380   3                              else
+ 381   3                              {
+ 382   4                                      SendString0(Serial_Back_NowayWrong);
+ 383   4                                      return;
+ 384   4                              }
+ 385   3                              return;
+ 386   3                      }
+ 387   2              }
+ 388   1              //≈–∂® «∑Ò «Check÷∏¡Ó
+ 389   1              if (Strlen == Serial_Cmd_Check_Len + Serial_Cmd_Check_Extra + Serial_Cmd_Port)
+ 390   1              {
+ 391   2                      for (i=0; i<Serial_Cmd_Check_Len; i++)
+ 392   2                      {
+ 393   3                              if (Str[i] != Serial_Cmd_Check[i]) break;
+ 394   3                      }
+ 395   2                      if (i == Serial_Cmd_Check_Len && Str[i + Serial_Cmd_Check_Extra] == '@')
+ 396   2                      {
+ 397   3                              //do something
+ 398   3                              mPort = CharToHex('0', Str[i + Serial_Cmd_Check_Extra + 1]);
+ 399   3                              if (Send_GoStart_Port(mPort)!=Send_Finished)
+ 400   3                              {
+ 401   4                                      SendString0(Serial_Back_GoStartWrong);
+ 402   4                                      return;
+ 403   4                              }
+ 404   3                              SendOrder = R_Cmd_Check;
+ 405   3                              SendData = (CharToHex(Str[i],Str[i+1])<<8) | CharToHex(Str[i+2],Str[i+3]);
+ 406   3                              if (SendM_Port(mPort)!=Send_Finished)
+ 407   3                              {
+ 408   4                                      SendString0(Serial_Back_SendWrong);
+ 409   4                                      return;
+ 410   4                              }
+ 411   3                              for (i=0; i<1000 && Receive_Port[mPort]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡
+             -À£¨“ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 412   3                              if (i==1000)
+ 413   3                              {
+ 414   4                                      SendString0(Serial_Back_NoAnswer);
+ 415   4                                      return;
+ 416   4                              }
+ 417   3                              if (ReceiveM_Port(mPort)!=Receive_Finished)
+ 418   3                              {
+ 419   4                                      SendString0(Serial_Back_TreatyWrong);
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 8   
+
+ 420   4                                      return;
+ 421   4                              }
+ 422   3                              if (ReceiveOrder != SendOrder || ReceiveData != SendData)
+ 423   3                              {
+ 424   4                                      SendString0(Serial_Back_WrongRepeatBack);
+ 425   4                                      return;
+ 426   4                              }
+ 427   3                              for (i=0; i<1000 && Receive_Port[mPort]() == 1; i++); //µ»¥˝“ª∂Œ ±º‰£¨”¶∏√≤ª”√Ã´≥§£¨Ã´≥§“≤÷ªƒ‹◊‘»œµπ√π¡
+             -À£¨“ÚŒ™÷Æ«∞“—æ≠∂‘¬Î≥…π¶
+ 428   3                              if (i==1000)
+ 429   3                              {
+ 430   4                                      SendString0(Serial_Back_NoAnswer);
+ 431   4                                      return;
+ 432   4                              }
+ 433   3                              if (ReceiveM_Port(mPort)!=Receive_Finished)
+ 434   3                              {
+ 435   4                                      SendString0(Serial_Back_TreatyWrong);
+ 436   4                                      return;
+ 437   4                              }
+ 438   3                              if (ReceiveOrder == T_Cmd_PasswordWrong)
+ 439   3                              {
+ 440   4                                      SendString0(Serial_Back_PasswordWrong);
+ 441   4                                      return;
+ 442   4                              }
+ 443   3                              else if (ReceiveOrder == T_Cmd_PasswordAccepted)
+ 444   3                              {
+ 445   4                                      SendString0(Serial_Back_PasswordAccepted);
+ 446   4                              }
+ 447   3                              else 
+ 448   3                              {
+ 449   4                                      SendString0(Serial_Back_NowayWrong);
+ 450   4                                      return;
+ 451   4                              }
+ 452   3                              return;
+ 453   3                      }
+ 454   2              }
+ 455   1              SendString0(Serial_Back_UnknownCmd);
+ 456   1              return;
+ 457   1      }
+ 458          void DoUSART(unsigned char receiveData)
+ 459          {
+ 460   1              switch (receiveData)
+ 461   1              {                                                        
+ 462   2                      case '$': //À¢–¬Str «“ Ω· ¯Str ‰»Î
+ 463   2                              if (Strlen != 0)
+ 464   2                              {
+ 465   3                                      DoString();
+ 466   3                                      Strlen = 0;
+ 467   3                              }
+ 468   2                              Strlen = 0;
+ 469   2                              break;
+ 470   2                      default:
+ 471   2                              Str[Strlen] = receiveData;
+ 472   2                              Strlen ++;
+ 473   2                              break;
+ 474   2              }
+ 475   1      }
+ 476          void Usart() interrupt 4
+ 477          {
+ 478   1              unsigned char receiveData;
+ 479   1              receiveData=SBUF; //≥ˆ»•Ω” ’µΩµƒ ˝æ›
+ 480   1              RI = 0;           //«Â≥˝Ω” ’÷–∂œ±Í÷æŒª
+C51 COMPILER V9.01   CENTRAL_MAIN                                                          06/17/2016 20:23:43 PAGE 9   
+
+ 481   1              DoUSART(receiveData);
+ 482   1              //SBUF=receiveData; //Ω´Ω” ’µΩµƒ ˝æ›∑≈»ÎµΩ∑¢ÀÕºƒ¥Ê∆˜
+ 483   1              //while(!TI);             //µ»¥˝∑¢ÀÕ ˝æ›ÕÍ≥…
+ 484   1              //TI=0;                   //«Â≥˝∑¢ÀÕÕÍ≥…±Í÷æŒª
+ 485   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   5216    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    315      37
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
